@@ -52,9 +52,9 @@ extension TargetType {
 }
 
 /// Alamofire encode
-extension TargetType {
+private extension TargetType {
     /// Encode request parameters
-    private func encode(_ urlRequest: inout URLRequest) throws {
+    func encode(_ urlRequest: inout URLRequest) throws {
         switch task {
         case .requestPlain: return
         case .requestParameters(parameters: let parameters, encoding: let encoding):
@@ -62,7 +62,7 @@ extension TargetType {
             switch encoding {
             case .queryString:
                 guard let url = urlRequest.url else {
-                    throw NetworkError.invalidURL
+                    throw NetworkError.invalidUrl
                 }
                 
                 if var urlComponents = URLComponents(url: url, resolvingAgainstBaseURL: false) {
@@ -92,7 +92,7 @@ extension TargetType {
     ///   - value: Value of the query component.
     ///
     /// - Returns: The percent-escaped, URL encoded query string components.
-    public func queryComponents(fromKey key: String, value: Any) -> [(String, String)] {
+    func queryComponents(fromKey key: String, value: Any) -> [(String, String)] {
         var components: [(String, String)] = []
         switch value {
         case let dictionary as [String: Any]:
@@ -122,11 +122,11 @@ extension TargetType {
     /// - Parameter string: `String` to be percent-escaped.
     ///
     /// - Returns:          The percent-escaped `String`.
-    public func escape(_ string: String) -> String {
+    func escape(_ string: String) -> String {
         string.addingPercentEncoding(withAllowedCharacters: .afURLQueryAllowed) ?? string
     }
 
-    private func query(_ parameters: [String: Any]) -> String {
+    func query(_ parameters: [String: Any]) -> String {
         var components: [(String, String)] = []
 
         for key in parameters.keys.sorted(by: <) {

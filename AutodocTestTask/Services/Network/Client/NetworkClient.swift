@@ -21,7 +21,7 @@ final class NetworkClient: NetworkClientProtocol {
     
     func request<T: Decodable>(_ target: TargetType) async throws -> T {
         guard let request = target.urlRequest else {
-            throw NetworkError.invalidURL
+            throw NetworkError.invalidRequest
         }
         
         do {

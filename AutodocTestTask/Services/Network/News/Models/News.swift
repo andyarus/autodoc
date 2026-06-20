@@ -12,9 +12,10 @@ struct NewsResponse: Decodable {
     let totalCount: Int?
 }
 
-struct News: Decodable {
+struct News: Identifiable, Decodable {
     let id: Int
     let title: String?
     let fullUrl: String?
     let titleImageUrl: String?
+    var hasImage: Bool { titleImageUrl != nil }
 }

@@ -9,20 +9,22 @@ import Foundation
 import Combine
 
 protocol NewsViewModelProtocol {
-    var newsPublisher: AnyPublisher<[News], Never> { get }
+    var newsPublisher: AnyPublisher<[News.ID], Never> { get }
     func fetchNews() async
+    func fetchNews(by id: News.ID) -> News?
 }
 
 @MainActor
 final class NewsViewModel: NewsViewModelProtocol, ObservableObject {
-    var newsPublisher: AnyPublisher<[News], Never> {
+    var newsPublisher: AnyPublisher<[News.ID], Never> {
         $news
             .dropFirst()
             .eraseToAnyPublisher()
     }
-    @Published private var news: [News] = []
+    @Published private var news: [News.ID] = []
+    
+    private var newsStore: [News.ID: News] = [:]
     private let networkService: NewsNetworkServiceProtocol
-    private var cancellables = Set<AnyCancellable>()
     
     init(networkService: NewsNetworkServiceProtocol) {
         self.networkService = networkService
@@ -30,9 +32,18 @@ final class NewsViewModel: NewsViewModelProtocol, ObservableObject {
     
     func fetchNews() async {
         do {
-            news = try await networkService.fetchNews().news
+            let news = try await networkService.fetchNews().news
+            news.toDict(&newsStore)
+            self.news = news.map { $0.id }
         } catch {
+            
+            // TODO show error message
+            
             print(error.localizedDescription)
         }
+    }
+    
+    func fetchNews(by id: News.ID) -> News? {
+        newsStore[id]
     }
 }

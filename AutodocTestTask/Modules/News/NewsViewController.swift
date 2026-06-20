@@ -10,9 +10,15 @@ import Combine
 
 final class NewsViewController: UIViewController {
     
-    private var cancellables = Set<AnyCancellable>()
-    private let viewModel: any NewsViewModelProtocol
+    // MARK: - Properties
+    let viewModel: any NewsViewModelProtocol
+    var collectionView: UICollectionView!
+    var dataSource: UICollectionViewDiffableDataSource<Section, News.ID>!
     
+    private var cancellables = Set<AnyCancellable>()
+    private var task: Task<Void, Never>?
+    
+    // MARK: - Init
     init(viewModel: any NewsViewModelProtocol) {
         self.viewModel = viewModel
         super.init(nibName: nil, bundle: nil)
@@ -22,21 +28,27 @@ final class NewsViewController: UIViewController {
         fatalError("init(coder:) has not been implemented")
     }
     
+    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         setupBindings()
-        Task { await viewModel.fetchNews() }
+        setupCollectionView()
+        setupDataSource()
+        
+        task = Task { [weak self] in await self?.viewModel.fetchNews() }
     }
     
+    deinit {
+        task?.cancel()
+    }
+    
+    // MARK: - Private Methods
     private func setupBindings() {
         viewModel.newsPublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] news in
-                self?.updateUI(with: news)
+                self?.applySnapshot(with: news)
             }
             .store(in: &cancellables)
-    }
-    
-    private func updateUI(with news: [News]) {
     }
 }
