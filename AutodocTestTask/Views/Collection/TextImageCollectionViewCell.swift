@@ -9,8 +9,11 @@ import UIKit
 
 class TextImageCollectionViewCell: UICollectionViewCell {
     
+    static let estimatedHeight = UIScreen.main.bounds.width * 3/4
+    
     private let titleLabel = UILabel()
     private let imageView = UIImageView()
+    private var previousBounds: CGSize = .zero
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -42,6 +45,21 @@ class TextImageCollectionViewCell: UICollectionViewCell {
                                  y: titleLabel.frame.height,
                                  width: contentView.bounds.width,
                                  height: contentView.bounds.height - titleLabel.frame.height)
+        previousBounds = bounds.size
+    }
+    
+    override func sizeThatFits(_ size: CGSize) -> CGSize {
+        return CGSize(width: size.width, height: Self.estimatedHeight)
+    }
+    
+    override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
+        /// If it's already rendered at the proposed size it can just return
+        if previousBounds == layoutAttributes.size {
+            return layoutAttributes
+        } else {
+            /// This will call sizeThatFits
+            return super.preferredLayoutAttributesFitting(layoutAttributes)
+        }
     }
     
     func configure(with news: News? = nil) {

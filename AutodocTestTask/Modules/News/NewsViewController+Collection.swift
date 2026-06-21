@@ -15,7 +15,7 @@ extension NewsViewController {
     
     // MARK: - Compositional Layout Setup
     func setupCollectionView() {
-        let estimatedHeight = view.bounds.width * 3/4
+        let estimatedHeight = TextImageCollectionViewCell.estimatedHeight
         let layout = UICollectionViewCompositionalLayout { (sectionIndex, layoutEnvironment) -> NSCollectionLayoutSection? in
             let itemSize = NSCollectionLayoutSize(
                 widthDimension: .fractionalWidth(1.0),
@@ -37,6 +37,7 @@ extension NewsViewController {
         
         collectionView = UICollectionView(frame: view.bounds, collectionViewLayout: layout)
         collectionView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        collectionView.delegate = self
         collectionView.prefetchDataSource = self
         view.addSubview(collectionView)
     }
@@ -57,11 +58,14 @@ extension NewsViewController {
             
             Task {
                 do {
-                    let image = try await ImageLoader.shared.loadImage(from: imageUrl)
-                    /// Protection against cell reuse
-                    guard cell.accessibilityIdentifier == imageUrl else { return }
-                    await MainActor.run { cell.setImage(with: image) }
+                    let image = try await ImageLoader.shared.loadImage(from: imageUrl)                    
+                    await MainActor.run {
+                        /// Protection on cell reuse
+                        guard cell.accessibilityIdentifier == imageUrl else { return }
+                        cell.setImage(with: image)
+                    }
                 } catch {
+                    guard !(error is CancellationError) else { return }
                     print("Failed to load image: \(error)")
                 }
             }
@@ -78,15 +82,29 @@ extension NewsViewController {
     }
     
     // MARK: - Snapshot
-    func applySnapshot(with items: [News.ID]) {
-        var snapshot = dataSource.snapshot()
-        if snapshot.sectionIdentifiers.contains(.main) {
-            snapshot.appendItems(items)
-        } else {
-            snapshot.appendSections([.main])
-            snapshot.appendItems(items)
+    func applySnapshot(with items: [News.ID], isNext: Bool) {
+        var snapshot = isNext
+            ? dataSource.snapshot()
+            : NSDiffableDataSourceSnapshot<Section, News.ID>()
+        if !isNext { snapshot.appendSections([.main]) }
+        snapshot.appendItems(items)
+        dataSource.apply(snapshot, animatingDifferences: isNext)
+    }
+}
+
+// MARK: - UICollectionViewDelegate
+extension NewsViewController: UICollectionViewDelegate {
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        /// Pagination
+        let contentHeight = scrollView.contentSize.height
+        let offsetY = scrollView.contentOffset.y
+        let height = scrollView.frame.size.height
+        let offset = contentHeight - offsetY - height
+        guard offset < viewModel.offsetLimit, offset > 0 else { return } // !scrollView.isDecelerating
+        
+        task = Task { [weak self] in
+            await self?.viewModel.fetchNews()
         }
-        dataSource.apply(snapshot, animatingDifferences: true)
     }
 }
 

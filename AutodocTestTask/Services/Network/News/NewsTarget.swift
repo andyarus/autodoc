@@ -8,7 +8,7 @@
 import Foundation
 
 enum NewsTarget: TargetType {
-    case news
+    case news(pagination: Pagination)
 }
 
 extension NewsTarget {
@@ -18,7 +18,8 @@ extension NewsTarget {
     
     var path: String {
         switch self {
-        case .news: "news/1/15"
+        case .news(let pagination):
+            "news/\(pagination.page)/\(pagination.itemsLimit)"
         }
     }
     

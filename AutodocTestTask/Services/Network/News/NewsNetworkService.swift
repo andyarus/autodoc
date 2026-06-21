@@ -8,7 +8,7 @@
 import Foundation
 
 protocol NewsNetworkServiceProtocol {
-    func fetchNews() async throws -> NewsResponse
+    func fetchNews(with pagination: Pagination) async throws -> NewsResponse
 }
 
 final class NewsNetworkService: NewsNetworkServiceProtocol {
@@ -19,8 +19,8 @@ final class NewsNetworkService: NewsNetworkServiceProtocol {
         self.client = client
     }
     
-    func fetchNews() async throws -> NewsResponse {
-        let news: NewsResponse = try await client.request(NewsTarget.news)
+    func fetchNews(with pagination: Pagination) async throws -> NewsResponse {
+        let news: NewsResponse = try await client.request(NewsTarget.news(pagination: pagination))
         return news
     }
 }

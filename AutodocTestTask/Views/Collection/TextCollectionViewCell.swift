@@ -24,7 +24,6 @@ class TextCollectionViewCell: UICollectionViewCell {
     
     override func prepareForReuse() {
         super.prepareForReuse()
-        titleLabel.text = nil
     }
     
     override func layoutSubviews() {
@@ -54,7 +53,6 @@ class TextCollectionViewCell: UICollectionViewCell {
     
     func configure(with news: News?) {
         titleLabel.text = news?.title
-        contentView.backgroundColor = .systemBackground
     }
     
     private func setupUI() {

@@ -24,6 +24,10 @@ final class NetworkClient: NetworkClientProtocol {
             throw NetworkError.invalidRequest
         }
         
+#if DEBUG
+        print(request)
+#endif
+        
         do {
             let (data, response) = try await session.data(for: request)
             

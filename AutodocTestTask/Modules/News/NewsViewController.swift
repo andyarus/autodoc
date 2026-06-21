@@ -14,9 +14,9 @@ final class NewsViewController: UIViewController {
     let viewModel: any NewsViewModelProtocol
     var collectionView: UICollectionView!
     var dataSource: UICollectionViewDiffableDataSource<Section, News.ID>!
-    
+    var task: Task<Void, Never>?
+    private let refreshControl = UIRefreshControl()
     private var cancellables = Set<AnyCancellable>()
-    private var task: Task<Void, Never>?
     
     // MARK: - Init
     init(viewModel: any NewsViewModelProtocol) {
@@ -34,8 +34,8 @@ final class NewsViewController: UIViewController {
         setupBindings()
         setupCollectionView()
         setupDataSource()
-        
-        task = Task { [weak self] in await self?.viewModel.fetchNews() }
+        setupRefreshControl()
+        fetchData()
     }
     
     deinit {
@@ -46,9 +46,25 @@ final class NewsViewController: UIViewController {
     private func setupBindings() {
         viewModel.newsPublisher
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] news in
-                self?.applySnapshot(with: news)
+            .sink { [weak self] (news, isNext) in
+                guard let self else { return }
+                self.applySnapshot(with: news, isNext: isNext)
+                self.refreshControl.endRefreshing()
             }
             .store(in: &cancellables)
+    }
+    
+    private func setupRefreshControl() {
+        collectionView.refreshControl = refreshControl
+        refreshControl.addTarget(self, action: #selector(fetchData), for: .valueChanged)
+    }
+    
+    @objc
+    private func fetchData() {
+        viewModel.resetPagination()
+        task?.cancel()
+        task = Task { [weak self] in
+            await self?.viewModel.fetchNews()
+        }
     }
 }

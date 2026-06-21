@@ -29,9 +29,11 @@ actor ImageLoader {
     }
     
     func cancel(for urlString: String) async {
-        guard let task = runningTasks[urlString as NSString],
+        let urlString = urlString as NSString
+        guard let task = runningTasks[urlString],
             !task.isCancelled else { return }
         task.cancel()
+        runningTasks.removeValue(forKey: urlString)
     }
     
     func loadImage(from urlString: String, retries: Int = 3) async throws -> UIImage? {
