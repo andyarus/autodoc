@@ -9,8 +9,8 @@ import UIKit
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
+    var appCoordinator: AppCoordinatorProtocol?
     var window: UIWindow?
-
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         // Use this method to optionally configure and attach the UIWindow `window` to the provided UIWindowScene `scene`.
@@ -19,19 +19,13 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         
         guard let windowScene = (scene as? UIWindowScene) else { return }
         
+        appCoordinator = AppCoordinator()
+        
         let window = UIWindow(windowScene: windowScene)
-        
-        let networkClient = NetworkClient()
-        let networkService = NewsNetworkService(client: networkClient)
-        let vm = NewsViewModel(networkService: networkService)
-        let vc = NewsViewController(viewModel: vm)
-        let rootViewController = vc
-        
-        let navigationController = UINavigationController(rootViewController: rootViewController)
-        
-        window.rootViewController = navigationController
+        window.rootViewController = appCoordinator?.start()
         
         self.window = window
+        
         window.makeKeyAndVisible()
     }
 

@@ -14,6 +14,7 @@ protocol NewsViewModelProtocol {
     func resetPagination()
     func fetchNews() async
     func fetchNews(by id: News.ID) -> News?
+    func openNews(by id: News.ID)
 }
 
 @MainActor
@@ -28,10 +29,13 @@ final class NewsViewModel: NewsViewModelProtocol, ObservableObject {
     
     private var fetchTask: Task<Void, Never>? = nil
     private var newsStore: [News.ID: News] = [:]
-    private let networkService: NewsNetworkServiceProtocol
     private var pagination = Pagination()
+    private weak var coordinator: AppCoordinatorProtocol?
+    private let networkService: NewsNetworkServiceProtocol
     
-    init(networkService: NewsNetworkServiceProtocol) {
+    init(coordinator: AppCoordinatorProtocol,
+         networkService: NewsNetworkServiceProtocol) {
+        self.coordinator = coordinator
         self.networkService = networkService
         resetPagination()
     }
@@ -61,16 +65,23 @@ final class NewsViewModel: NewsViewModelProtocol, ObservableObject {
                 self.news = (news.map { $0.id }, isNext: pagination.page != 1)
                 pagination.hasNext = !news.isEmpty
             } catch {
-                
-                // TODO show error message
-                
-                print(error.localizedDescription)
-                
+                guard !(error is CancellationError) else { return }
+                alert(title: .localized("Error"), message: .localized("Error.requst"))
             }
         }
     }
     
     func fetchNews(by id: News.ID) -> News? {
         newsStore[id]
+    }
+    
+    func openNews(by id: News.ID) {
+        guard let urlString = fetchNews(by: id)?.fullUrl,
+            let url = URL(string: urlString) else { return }
+        coordinator?.open(url: url)
+    }
+    
+    private func alert(title: String, message: String, confirmAction: (() -> Void)? = nil) {
+        coordinator?.alert(title: title, message: message, confirmAction: confirmAction)
     }
 }

@@ -106,6 +106,11 @@ extension NewsViewController: UICollectionViewDelegate {
             await self?.viewModel.fetchNews()
         }
     }
+    
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        guard let itemID = dataSource.itemIdentifier(for: indexPath) else { return }
+        viewModel.openNews(by: itemID)
+    }
 }
 
 // MARK: - UICollectionViewDataSourcePrefetching
