@@ -25,7 +25,7 @@ actor ImageLoader {
     
     /// Create Task so that it gets a cached image or image from the running task later
     func prefetchImage(from urlString: String, retries: Int = 3) async {
-        _ = try? await loadImage(from: urlString, retries: retries)
+        _ = try? await loadImage(from: urlString, retries: retries, needsPreparing: true)
     }
     
     func cancel(for urlString: String) async {
@@ -36,7 +36,9 @@ actor ImageLoader {
         runningTasks.removeValue(forKey: urlString)
     }
     
-    func loadImage(from urlString: String, retries: Int = 3) async throws -> UIImage? {
+    func loadImage(from urlString: String,
+                   retries: Int = 3,
+                   needsPreparing: Bool = false) async throws -> UIImage? {
         guard let url = URL(string: urlString) else {
             throw NetworkError.invalidUrl
         }
@@ -66,8 +68,12 @@ actor ImageLoader {
                         throw ImageLoaderError.pointlessRetry
                     }
                     
-                    guard let image = UIImage(data: data) else {
+                    guard var image = UIImage(data: data) else {
                         throw ImageLoaderError.invalidData
+                    }
+                    
+                    if needsPreparing {
+                        image = image.preparingForDisplay() ?? image
                     }
                     
                     cache.setObject(image, forKey: urlString)
